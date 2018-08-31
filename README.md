@@ -1,2 +1,13 @@
-# rally-decomp-story-progress
-parent stories broken down by child delivery schedule
+Random App Name38901
+=========================
+
+## Overview
+
+
+## License
+
+Random App Name38901 is released under the MIT license.  See the file [LICENSE](./LICENSE) for the full text.
+
+##Documentation for SDK
+
+You can find the documentation on our help [site.](https://help.rallydev.com/apps/2.1/doc/)
