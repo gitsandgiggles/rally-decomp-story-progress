@@ -7,7 +7,7 @@
 
     <script type="text/javascript">
         Rally.onReady(function () {
-                Ext.define("CustomApp",{extend:"Rally.app.App",componentCls:"app",launch:function(){console.log("Hello world! I am the decomp stry progress viewer")}});
+                Ext.define("CustomApp",{extend:"Rally.app.App",componentCls:"app",StoryMapBoard:void 0,launch:function(){console.log("Hello world! I am the decomp stry progress viewer in v0.1 change 2"),me=this,me._loadSchedules(),me._loadData()},_loadSchedules:function(){me=this,me.add({xtype:"rallyfieldvaluecombobox",itemId:"state-combobox",model:"UserStory",multiSelect:!0,field:"ScheduleState",value:["Defined","Backlog","In-Progress","Completed"],fieldLabel:"Schedule State",labelAlign:"right",listeners:{select:me._loadData,ready:me._loadData,scope:me}})},_getFilters:function(e){console.log("Yo! Amma gettin ma filters");var o=void 0,t=void 0;return e.forEach(function(e){t=Ext.create("Rally.data.wsapi.Filter",{property:"ScheduleState",operation:"=",value:e}),o=o?o.or(t):t,console.log("state: ",e),console.log("myFilters: ",o)}),o},_loadData:function(){me=this;var e=me._getFilters(me.down("#state-combobox").getValue());e?me.StoryMapBoard?me.StoryMapBoard.refresh({storeConfig:{filters:e}}):(me.StoryMapBoard=Ext.create("Rally.ui.cardboard.CardBoard",{types:["User Story"],attribute:"Iteration",context:this.getContext(),rowConfig:{field:"PortfolioItem"},cardConfig:{fields:["Name","ScheduleState"]},storeConfig:{filters:e,context:{project:"/project/215859356248",projectScopeUp:!1,projectScopeDown:!1}}}),me.add(me.StoryMapBoard)):console.log("No states selected")}});
 
             Rally.launchApp('CustomApp', {
                 name:"Random App Name38901",
