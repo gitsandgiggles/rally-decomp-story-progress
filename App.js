@@ -12,13 +12,36 @@ Ext.define('CustomApp', {
         console.log('Hello world! I am the decomp stry progress viewer in v0.1 change 2');
         
         me = this;
-        me._loadSchedules();
-        me._loadData();
+        me._loadIterations();
+        console.log('iterations loaded');
+        //me._loadData();
 
 
     },
+    
+     // create and load iteration pulldown 
+    _loadIterations: function() {
+        console.log('called _loadIterations');
+      
+        var me = this;
+
+        var iterComboBox = Ext.create('Rally.ui.combobox.IterationComboBox', {
+          itemId: 'iteration-combobox',     // we'll use this item ID later to get the users' selection
+          fieldLabel: 'Iteration',
+          labelAlign: 'right',
+          width: 300,
+          listeners: {
+            ready: me._loadSchedules,      // initialization flow: next, load severities
+            select: me._loadData,           // user interactivity: when they choose a value, (re)load the data
+            scope: me
+         }
+        });
+
+        me.add(iterComboBox); 
+     },
 
     _loadSchedules: function(){
+      console.log('called _loadSchedules');
       me = this;
       
       me.add({
@@ -42,9 +65,10 @@ Ext.define('CustomApp', {
     },
     
     
-    _getFilters: function(states){
+    _getFilters: function(states, iter){
       
       console.log('Yo! Amma gettin ma filters');
+      console.log('my iter is ',iter);
       
       var myFilters = undefined;
       var currFilter = undefined;
@@ -64,14 +88,30 @@ Ext.define('CustomApp', {
         console.log('myFilters: ', myFilters);
       });
       
+      // iteration filter
+      
+      //debug - get this iteration, find the date
+     // me = this;
+      console.log('ieration: ', me.down('#iteration-combobox').getRecord());
+      console.log('start date: ', me.down('#iteration-combobox').getRecord().data.StartDate.toISOString());
+      iterDate  = me.down('#iteration-combobox').getRecord().data.StartDate.toISOString();
+      
+      var iterFilter = Ext.create('Rally.data.wsapi.Filter', {
+        property: 'Iteration.StartDate',
+        operator: '>=',
+        value: iterDate
+      });
+      
+     myFilters = myFilters.and(iterFilter);
+      
       return myFilters     
     },
     
     _loadData: function(){
      
-      
+      console.log('called _loadData');
       me = this;      
-      var myFilters = me._getFilters(me.down('#state-combobox').getValue());
+      var myFilters = me._getFilters(me.down('#state-combobox').getValue(), me.down('#iteration-combobox').getRecord().get('_ref'));
       
       
       if (myFilters) {
