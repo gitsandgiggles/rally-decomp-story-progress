@@ -27,11 +27,11 @@ Ext.define('CustomApp', {
 
         var iterComboBox = Ext.create('Rally.ui.combobox.IterationComboBox', {
           itemId: 'iteration-combobox',     // we'll use this item ID later to get the users' selection
-          fieldLabel: 'Iteration',
+          fieldLabel: 'Start from:',
           labelAlign: 'right',
           width: 300,
           listeners: {
-            ready: me._loadSchedules,      // initialization flow: next, load severities
+            ready: me._loadSchedules,      // initialization flow: next, load schedules
             select: me._loadData,           // user interactivity: when they choose a value, (re)load the data
             scope: me
          }
@@ -58,7 +58,26 @@ Ext.define('CustomApp', {
            
            listeners: {
                 select: me._loadData,
-                ready: me._loadData,
+                ready: me._loadHideCheck,
+                scope: me
+            }
+        });
+    },
+    
+    
+    _loadHideCheck: function(){
+      console.log('called _loadHideCheck');
+      var me = this;
+     
+      me.add({
+          xtype: 'rallycheckboxfield',
+          fieldLabel: 'Show empty iterations',
+          itemId: 'hidecheckbox',
+          value: true,
+           
+           listeners: {
+                change: me._loadData,
+                added: me._loadData,
                 scope: me
             }
         });
@@ -67,12 +86,10 @@ Ext.define('CustomApp', {
     
     _getFilters: function(states, iter){
       
-      console.log('Yo! Amma gettin ma filters');
-      console.log('my iter is ',iter);
-      
       var myFilters = undefined;
       var currFilter = undefined;
       
+      // state filter
       states.forEach(function(state){
         currFilter = Ext.create('Rally.data.wsapi.Filter', {
           property: 'ScheduleState',
@@ -84,35 +101,71 @@ Ext.define('CustomApp', {
         }else {
             myFilters = currFilter;
         }
-        console.log('state: ', state);
-        console.log('myFilters: ', myFilters);
       });
       
       // iteration filter
-      
-      //debug - get this iteration, find the date
-     // me = this;
-      console.log('ieration: ', me.down('#iteration-combobox').getRecord());
-      console.log('start date: ', me.down('#iteration-combobox').getRecord().data.StartDate.toISOString());
       iterDate  = me.down('#iteration-combobox').getRecord().data.StartDate.toISOString();
       
-      var iterFilter = Ext.create('Rally.data.wsapi.Filter', {
+      var iterFilter1 = Ext.create('Rally.data.wsapi.Filter', {
         property: 'Iteration.StartDate',
         operator: '>=',
         value: iterDate
       });
       
-     myFilters = myFilters.and(iterFilter);
+      // don't exclude None iteration
+      var iterFilter = iterFilter1.or(
+          Ext.create('Rally.data.wsapi.Filter', {
+            property: 'Iteration',
+            operator: '=',
+            value: null
+          })
+      );
       
+      myFilters = myFilters.and(iterFilter);
       return myFilters     
     },
     
+    _hideEmptyColumns(cols){
+      
+      var me = this;
+      
+      var showEmpty  = me.down('#hidecheckbox').getValue();
+      var firstIter = me.down('#iteration-combobox').getRecord().get('Name');
+      var preFirstIter = true;
+
+      _.each(cols, function(col) {
+          var cardsInCol = col.getCards();
+          var cardCount = _.flatten(_.values(cardsInCol)).length;
+          
+          
+          if (col.getColumnHeaderConfig().headerTpl === firstIter){
+              preFirstIter = false;
+          }
+          
+          // always hide all columns before the selected iteration except None, as they will never have cards
+          // if hide empty is on, also hide all columns after current iteration that have no cards
+          
+          if((preFirstIter && col.getColumnHeaderConfig().headerTpl != 'None') || (cardCount === 0 && !showEmpty)) {
+              col.setVisible(false);
+          } else {
+             col.setVisible(true);
+          }
+          
+      });
+      
+    },
+    
+    _onBoardLoaded: function(board, config){
+
+      var me = this;
+      me._hideEmptyColumns(board.getColumns());
+    
+    },
+    
     _loadData: function(){
-     
-      console.log('called _loadData');
+    
       me = this;      
       var myFilters = me._getFilters(me.down('#state-combobox').getValue(), me.down('#iteration-combobox').getRecord().get('_ref'));
-      
       
       if (myFilters) {
 
@@ -142,18 +195,25 @@ Ext.define('CustomApp', {
                     ]
                 },
                 
+                listeners: {
+                              load: me._onBoardLoaded,
+                              scope: me
+                              },
+                
                 storeConfig: {
                     filters: myFilters,
                     context:{
                               project:'/project/215859356248',
                               projectScopeUp: false,
                               projectScopeDown: false
-                            }
+                            },
                 }
-            });
-        
+                
+
+            });          
           me.add(me.StoryMapBoard);
         }
+
       } else {
           console.log('No states selected');
       }
@@ -176,7 +236,13 @@ Ext.define('CustomApp', {
 
 // add a scheduleState picker - done
 
-// remove empty columns
+// remove empty columns - done
+
+// put "None" back - done
+
+// refactor with a horiz layout
+
+// put date in the header as well
 
 // indicate size and progress vs tasks
 // navigate from current project only, up to epics, then select anything from other squads as well. Mark somehow
