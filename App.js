@@ -2,6 +2,18 @@ Ext.define('CustomApp', {
     extend: 'Rally.app.App',
     componentCls: 'app',
     
+    items: [      // pre-define the general layout of the app; the skeleton (ie. header, content, footer)
+      {
+        xtype: 'container', // this container lets us control the layout of the pulldowns; they'll be added below
+        itemId: 'pulldown-container',
+        layout: {
+                type: 'hbox',           // 'horizontal' layout
+                align: 'stretch',
+                padding: '5'
+            }
+      }
+    ],
+    
     
     StoryMapBoard: undefined,
     
@@ -29,7 +41,7 @@ Ext.define('CustomApp', {
           itemId: 'iteration-combobox',     // we'll use this item ID later to get the users' selection
           fieldLabel: 'Start from:',
           labelAlign: 'right',
-          width: 300,
+          width: 500,
           listeners: {
             ready: me._loadSchedules,      // initialization flow: next, load schedules
             select: me._loadData,           // user interactivity: when they choose a value, (re)load the data
@@ -37,14 +49,16 @@ Ext.define('CustomApp', {
          }
         });
 
-        me.add(iterComboBox); 
+        me.down('#pulldown-container').add(iterComboBox); 
+        //me.add(iterComboBox); 
      },
 
     _loadSchedules: function(){
       console.log('called _loadSchedules');
       me = this;
       
-      me.add({
+     //me.add({
+     me.down('#pulldown-container').add({
            xtype: 'rallyfieldvaluecombobox',
            itemId: 'state-combobox',
            
@@ -69,11 +83,14 @@ Ext.define('CustomApp', {
       console.log('called _loadHideCheck');
       var me = this;
      
-      me.add({
+      //me.add({
+      me.down('#pulldown-container').add({
           xtype: 'rallycheckboxfield',
-          fieldLabel: 'Show empty iterations',
+          boxLabel: 'Show empty iterations',
           itemId: 'hidecheckbox',
           value: true,
+          width: 300,
+          padding: '0 0 0 30',
            
            listeners: {
                 change: me._loadData,
@@ -158,8 +175,7 @@ Ext.define('CustomApp', {
     _onBoardLoaded: function(board, config){
 
       var me = this;
-      me._hideEmptyColumns(board.getColumns());
-    
+      me._hideEmptyColumns(board.getColumns());    
     },
     
     _loadData: function(){
@@ -207,8 +223,7 @@ Ext.define('CustomApp', {
                               projectScopeUp: false,
                               projectScopeDown: false
                             },
-                }
-                
+                }          
 
             });          
           me.add(me.StoryMapBoard);
@@ -240,9 +255,15 @@ Ext.define('CustomApp', {
 
 // put "None" back - done
 
-// refactor with a horiz layout
+// refactor with a horiz layout - done
 
 // put date in the header as well
+
+// add title
+
+// add Epic selector -  select Epic shows parent stories, no Epic shows epic
+
+// add project selector
 
 // indicate size and progress vs tasks
 // navigate from current project only, up to epics, then select anything from other squads as well. Mark somehow
