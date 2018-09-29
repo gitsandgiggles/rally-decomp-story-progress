@@ -269,7 +269,8 @@ Ext.define('CustomApp', {
                 //xtype: 'rallycardboard',
                 types: ['User Story'],
                 attribute: 'Iteration',
-                context: this.getContext(),
+                //context: this.getContext(),
+                
                 rowConfig: {
                     field: rowConf
                 },
@@ -285,9 +286,17 @@ Ext.define('CustomApp', {
                 storeConfig: {
                     filters: myFilters,
                     context:{
+                              /*
+                              // MA squad
                               project:'/project/215859356248',
                               projectScopeUp: false,
                               projectScopeDown: true
+                              */
+                              // OTC program
+                              //project:'/project/68036597828',
+                              projectScopeUp: false,
+                              projectScopeDown: true
+                              
                             },
                 }          
 
@@ -295,6 +304,7 @@ Ext.define('CustomApp', {
           me.add(me.StoryMapBoard);
         }
         console.log('board config is ',me.StoryMapBoard.getStoreConfig()); 
+        console.log('context is ',this.getContext()); 
 
       } else {
           console.log('No states selected');
