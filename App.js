@@ -72,11 +72,39 @@ Ext.define('CustomApp', {
            
            listeners: {
                 select: me._loadData,
-                ready: me._loadHideCheck,
+                //ready: me._loadHideCheck,
+                ready: me._loadEpics,
                 scope: me
             }
         });
     },
+    
+    _loadEpics: function(){
+      console.log('called _loadEpics');
+      me = this;
+      
+     //me.add({
+     me.down('#pulldown-container').add({
+          xtype: 'rallyartifactsearchcombobox',
+                  storeConfig: {
+                      models: ['portfolioitem/epic']
+                  },
+           itemId: 'epic-combobox',
+           defaultSelectionPosition : 'first',
+           allowClear : true,
+
+          //value: '-- None --',
+           
+          fieldLabel: 'Epic drilldown:',
+          labelAlign: 'right',
+           
+           listeners: {
+                select: me._loadData,
+                boxready: me._loadHideCheck,
+                scope: me
+            }
+        });
+     },
     
     
     _loadHideCheck: function(){
@@ -101,7 +129,7 @@ Ext.define('CustomApp', {
     },
     
     
-    _getFilters: function(states, iter){
+    _getFilters: function(states, iter, epic){
       
       var myFilters = undefined;
       var currFilter = undefined;
@@ -121,7 +149,7 @@ Ext.define('CustomApp', {
       });
       
       // iteration filter
-      iterDate  = me.down('#iteration-combobox').getRecord().data.StartDate.toISOString();
+      var iterDate  = me.down('#iteration-combobox').getRecord().data.StartDate.toISOString();
       
       var iterFilter1 = Ext.create('Rally.data.wsapi.Filter', {
         property: 'Iteration.StartDate',
@@ -138,7 +166,33 @@ Ext.define('CustomApp', {
           })
       );
       
-      myFilters = myFilters.and(iterFilter);
+    myFilters = myFilters.and(iterFilter);
+    
+      // epic filter
+      
+      var epic  = me.down('#epic-combobox').getValue();
+      console.log('epic Value is ', epic);
+      if (epic != ''){
+        var epicFilter = Ext.create('Rally.data.wsapi.Filter', {
+          property: 'PortfolioItem',
+          operator: '=',
+          value: epic
+        });
+        
+        epicFilter = epicFilter.or(Ext.create('Rally.data.wsapi.Filter', {
+          property: 'Parent.PortfolioItem',
+          operator: '=',
+          value: epic
+        }));
+        myFilters = myFilters.and(epicFilter);        
+      }
+      
+      // exclude parent stories     
+      myFilters = myFilters.and(Ext.create('Rally.data.wsapi.Filter', {
+        property: 'DirectChildrenCount',
+        operator: '=',
+        value: 0
+      }));
       return myFilters     
     },
     
@@ -163,6 +217,7 @@ Ext.define('CustomApp', {
           // if hide empty is on, also hide all columns after current iteration that have no cards
           
           if((preFirstIter && col.getColumnHeaderConfig().headerTpl != 'None') || (cardCount === 0 && !showEmpty)) {
+            console.log('hiding', col, ' because ', 'before selected iter:', preFirstIter, 'the header is ', col.getColumnHeaderConfig().headerTpl , 'cardcount is ', cardCount, 'showempty is',showEmpty);
               col.setVisible(false);
           } else {
              col.setVisible(true);
@@ -183,7 +238,18 @@ Ext.define('CustomApp', {
       me = this;      
       var myFilters = me._getFilters(me.down('#state-combobox').getValue(), me.down('#iteration-combobox').getRecord().get('_ref'));
       
+      var epic  = me.down('#epic-combobox').getValue();
+      var rowConf = 'Epic';
+      var fieldList = ['Name','Parent','ScheduleState','PlanEstimate'];
+      
       if (myFilters) {
+        
+        
+        if (epic != '' && epic != null) {
+          console.log('setting parent', epic);
+          rowConf = 'Parent';
+          fieldList = ['Name','ScheduleState','PlanEstimate'];
+        }
 
        
         if (me.StoryMapBoard) {
@@ -191,6 +257,9 @@ Ext.define('CustomApp', {
            me.StoryMapBoard.refresh({
                   storeConfig: {
                     filters: myFilters
+                  },
+                  rowConfig: {
+                    field: rowConf
                   }
            });
           
@@ -202,13 +271,10 @@ Ext.define('CustomApp', {
                 attribute: 'Iteration',
                 context: this.getContext(),
                 rowConfig: {
-                    field: 'PortfolioItem'
+                    field: rowConf
                 },
                 cardConfig: {
-                    fields: [
-                              'Name',
-                              'ScheduleState'
-                    ]
+                    fields: fieldList
                 },
                 
                 listeners: {
@@ -221,13 +287,14 @@ Ext.define('CustomApp', {
                     context:{
                               project:'/project/215859356248',
                               projectScopeUp: false,
-                              projectScopeDown: false
+                              projectScopeDown: true
                             },
                 }          
 
             });          
           me.add(me.StoryMapBoard);
         }
+        console.log('board config is ',me.StoryMapBoard.getStoreConfig()); 
 
       } else {
           console.log('No states selected');
@@ -257,13 +324,19 @@ Ext.define('CustomApp', {
 
 // refactor with a horiz layout - done
 
+// sort out the loading sequence with the Epic picker - done
+
 // put date in the header as well
 
 // add title
 
-// add Epic selector -  select Epic shows parent stories, no Epic shows epic
+// add Epic selector -  select Epic shows parent stories, no Epic shows epic - done
+
+// pull bottom level stories but group by epic - done
 
 // add project selector
+
+// BUG? why do completed stories not count in cardcount sometimes?
 
 // indicate size and progress vs tasks
 // navigate from current project only, up to epics, then select anything from other squads as well. Mark somehow
