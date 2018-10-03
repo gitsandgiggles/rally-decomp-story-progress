@@ -72,11 +72,34 @@ Ext.define('CustomApp', {
            
            listeners: {
                 select: me._loadData,
-                //ready: me._loadHideCheck,
-                ready: me._loadEpics,
+                ready: me._loadTags,
+                //ready: me._loadEpics,
                 scope: me
             }
         });
+    },
+    
+    _loadTags: function(){
+      console.log('called _loadTags'); 
+      
+      me = this;
+      
+       //me.add({
+       me.down('#pulldown-container').add({
+             xtype: 'rallytagpicker',
+             itemId: 'tag-picker',
+             width: 400,
+             fieldLabel: 'Tags:',
+             labelAlign: 'right',
+             
+             autoExpand: false,
+             
+             listeners: {
+                  select: me._loadData,
+                  boxready: me._loadEpics,
+                  scope: me
+              }
+          }); 
     },
     
     _loadEpics: function(){
@@ -129,10 +152,13 @@ Ext.define('CustomApp', {
     },
     
     
-    _getFilters: function(states, iter, epic){
+    _getFilters: function(states, iter, epic, tags){
+      
+      console.log('called getfilters');
       
       var myFilters = undefined;
       var currFilter = undefined;
+      var tagFilter = undefined;
       
       // state filter
       states.forEach(function(state){
@@ -168,9 +194,38 @@ Ext.define('CustomApp', {
       
     myFilters = myFilters.and(iterFilter);
     
+    // tagfilter
+    
+    console.log('tags is',tags);
+    if (tags.length > 0){
+      
+      _.each(tags, function(tag) {
+        
+            if (!tagFilter){
+              
+              tagFilter = Ext.create('Rally.data.wsapi.Filter', {
+              property: 'Tags',
+              operator: '=',
+              value: tag.data._ref});
+              
+            } else {
+              
+              tagFilter = tagFilter.or(Ext.create('Rally.data.wsapi.Filter', {
+              property: 'Tags',
+              operator: '=',
+              value: tag.data._ref}));
+            }
+        });
+      myFilters = myFilters.and(tagFilter);
+      
+    }  
+    
+    console.log('did tags filter');
+    
+    
       // epic filter
       
-      var epic  = me.down('#epic-combobox').getValue();
+      //var epic  = me.down('#epic-combobox').getValue();
       console.log('epic Value is ', epic);
       if (epic != ''){
         var epicFilter = Ext.create('Rally.data.wsapi.Filter', {
@@ -198,6 +253,7 @@ Ext.define('CustomApp', {
     
     _hideEmptyColumns(cols){
       
+      console.log('entering hide empty');
       var me = this;
       
       var showEmpty  = me.down('#hidecheckbox').getValue();
@@ -224,7 +280,7 @@ Ext.define('CustomApp', {
           }
           
       });
-      
+      console.log('leaving hide empty');
     },
     
     _onBoardLoaded: function(board, config){
@@ -235,8 +291,11 @@ Ext.define('CustomApp', {
     
     _loadData: function(){
     
-      me = this;      
-      var myFilters = me._getFilters(me.down('#state-combobox').getValue(), me.down('#iteration-combobox').getRecord().get('_ref'));
+      me = this;     
+      
+      console.log(me.down('#tag-picker').selectedValues.items);
+      
+      var myFilters = me._getFilters(me.down('#state-combobox').getValue(), me.down('#iteration-combobox').getRecord().get('_ref'), me.down('#epic-combobox').getValue(), me.down('#tag-picker').selectedValues.items);
       
       var epic  = me.down('#epic-combobox').getValue();
       var rowConf = 'Epic';
@@ -336,15 +395,20 @@ Ext.define('CustomApp', {
 
 // sort out the loading sequence with the Epic picker - done
 
-// put date in the header as well
-
-// add title
+// add title - done
 
 // add Epic selector -  select Epic shows parent stories, no Epic shows epic - done
 
 // pull bottom level stories but group by epic - done
 
-// add project selector
+// add project selector - done (not needed when we use getcontext)
+
+// add tag picker
+
+
+// put date in the header as well
+
+// get the program view working - load all iterations of child projects
 
 // BUG? why do completed stories not count in cardcount sometimes?
 
