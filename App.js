@@ -15,6 +15,7 @@ Ext.define('CustomApp', {
     ],
     
     
+    EpicSelectorInit: false,    //hack to differentiate between nothing seleccted and --None-- selected
     StoryMapBoard: undefined,
     
     launch: function() {
@@ -114,22 +115,28 @@ Ext.define('CustomApp', {
                       models: ['portfolioitem/epic']
                   },
            itemId: 'epic-combobox',
-           defaultSelectionPosition : 'first',
+           //defaultSelectionPosition : 'first',
            allowClear : true,
 
-          //value: '-- None --',
+          //value: '',
            
           fieldLabel: 'Epic drilldown:',
           labelAlign: 'right',
            
            listeners: {
-                select: me._loadData,
+                //select: me._loadData,
+                select: me._selectEpicHelper,
                 boxready: me._loadHideCheck,
                 scope: me
             }
         });
      },
     
+    _selectEpicHelper: function(){
+      var me = this;
+      me.EpicSelectorInit = true;
+      me._loadData();      
+    },
     
     _loadHideCheck: function(){
       console.log('called _loadHideCheck');
@@ -183,11 +190,13 @@ Ext.define('CustomApp', {
     
     _getFilters: function(states, iter, epic, tags){
       
+        console.log('##############epic is', epic);
+        
         var myFilters = undefined;
         myFilters = me._getStateFilter(states);
         myFilters = myFilters.and(me._getIterFilter(iter));
-        myFilters = myFilters.and(me._getEpicFilter(epic));
-        if (tags.length > 0) {myFilters = myFilters.and(me._getTagFilter(tags));}
+        if (epic != '') { myFilters = myFilters.and(me._getEpicFilter(epic)); }
+        if (tags.length > 0) { myFilters = myFilters.and(me._getTagFilter(tags)); }
         myFilters = myFilters.and(me._getParentFilter());
         
         return myFilters;    
@@ -248,18 +257,34 @@ Ext.define('CustomApp', {
       //var epic  = me.down('#epic-combobox').getValue();
       console.log('epic Value is ', epic);
       if (epic != ''){
-        var epicFilter = Ext.create('Rally.data.wsapi.Filter', {
+        console.log('shoudl be searching for ', epic);
+        
+        epicFilter = Ext.create('Rally.data.wsapi.Filter', {
+          property: 'Epic',
+          operator: '=',
+          value: epic
+        });
+        
+        /*var epicFilter = Ext.create('Rally.data.wsapi.Filter', {
           property: 'PortfolioItem',
           operator: '=',
           value: epic
         });
         
         epicFilter = epicFilter.or(Ext.create('Rally.data.wsapi.Filter', {
-          property: 'Parent.PortfolioItem',
-          operator: '=',
-          value: epic
-        }));
-        return epicFilter;        
+            property: 'Parent.PortfolioItem',
+            operator: '=',
+            value: epic
+          }).and(Ext.create('Rally.data.wsapi.Filter', {
+            property: 'Parent.c_Type',
+            operator: '=',
+            value: 'UserStory'}
+          ))
+        );*/
+
+       console.log('epic filter is ', epicFilter);
+       return epicFilter;
+       
       }     
     },
     
@@ -355,7 +380,7 @@ Ext.define('CustomApp', {
       var me = this;
       console.log('in collapse');
       _.each(rows, function(row) {
-        console.log('collapsing', row);
+        //console.log('collapsing', row);
         row.collapse();
         //console.log('collapsed', row);
       });
@@ -366,7 +391,7 @@ Ext.define('CustomApp', {
       var me = this;
       console.log('in expand');
       _.each(rows, function(row) {
-        console.log('expanding', row);
+        //console.log('expanding', row);
         row.expand();
         //console.log('expanded', row);
       });
@@ -387,16 +412,19 @@ Ext.define('CustomApp', {
       
       console.log(me.down('#tag-picker').selectedValues.items);
       
-      var myFilters = me._getFilters(me.down('#state-combobox').getValue(), me.down('#iteration-combobox').getRecord().get('_ref'), me.down('#epic-combobox').getValue(), me.down('#tag-picker').selectedValues.items);
+      //annoying thing, epic selector is null when loaded which filters to None epic. Override to '' which means no filter
+      var epic  = me.EpicSelectorInit ? me.down('#epic-combobox').getValue() : '';
       
-      var epic  = me.down('#epic-combobox').getValue();
+      var myFilters = me._getFilters(me.down('#state-combobox').getValue(), me.down('#iteration-combobox').getRecord().get('_ref'), epic, me.down('#tag-picker').selectedValues.items);
+      
+
       var rowConf = 'Epic';
       var fieldList = ['Name','Parent','ScheduleState','PlanEstimate'];
       
       if (myFilters) {
         
         
-        if (epic != '' && epic != null) {
+        if (epic != '') {
           console.log('setting parent', epic);
           rowConf = 'Parent';
           fieldList = ['Name','ScheduleState','PlanEstimate'];
