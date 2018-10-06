@@ -146,10 +146,39 @@ Ext.define('CustomApp', {
            
            listeners: {
                 change: me._loadData,
-                added: me._loadData,
+                //added: me._loadData,
+                added: me._uiButtons,
                 scope: me
             }
         });
+    },
+    
+    _uiButtons: function(){
+      var me = this;
+      
+      me.down('#pulldown-container').add({
+        xtype: 'rallybutton',
+        itemId: 'collapseallbutton',
+        text: 'Collapse All',
+        handler: function() {
+            //Ext.Msg.alert('Button', 'You clicked collapse');
+            me._doCollapse('collapse');
+        },
+        scope: me
+      });   
+
+      me.down('#pulldown-container').add({
+        xtype: 'rallybutton',
+        itemId: 'expandallbutton',
+        text: 'Expand All',
+        handler: function() {
+            //Ext.Msg.alert('Button', 'You clicked expand');
+            me._doCollapse('expand');
+        },
+        scope: me
+      });  
+      
+      me._loadData();
     },
     
     _getFilters: function(states, iter, epic, tags){
@@ -311,16 +340,13 @@ Ext.define('CustomApp', {
       console.log('leaving hide empty');
     },
    
-    _doCollapse(){
+    _doCollapse(action){
       
       var rows = me.down('#progressboard').getRows();
-      
-      var collapseAll = false;
-      var expandAll = true;  
-        
-      if (collapseAll){
+              
+      if (action == 'collapse'){
             me._collapseAll(rows);
-      } else if (expandAll){
+      } else if (action == 'expand'){
             me._expandAll(rows);
       }      
     },
@@ -351,7 +377,7 @@ Ext.define('CustomApp', {
 
       var me = this;   
       me._hideEmptyColumns();
-      me._doCollapse();       
+      me._doCollapse('expand');       
     
     },
     
