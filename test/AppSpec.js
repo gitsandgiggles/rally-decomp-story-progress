@@ -1,6 +1,6 @@
 describe('CustomApp', function() {
 
-    it('should render the app', function() {
+    it('should render the app blahblah', function() {
         var app = Rally.test.Harness.launchApp('CustomApp');
         expect(app.getEl()).toBeDefined();
     });

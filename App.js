@@ -96,6 +96,7 @@ Ext.define('CustomApp', {
              
              listeners: {
                   select: me._loadData,
+                  selectionchange: me._loadData,
                   boxready: me._loadEpics,
                   scope: me
               }
@@ -151,14 +152,23 @@ Ext.define('CustomApp', {
         });
     },
     
-    
     _getFilters: function(states, iter, epic, tags){
       
-      console.log('called getfilters');
-      
-      var myFilters = undefined;
+        var myFilters = undefined;
+        myFilters = me._getStateFilter(states);
+        myFilters = myFilters.and(me._getIterFilter(iter));
+        myFilters = myFilters.and(me._getEpicFilter(epic));
+        if (tags.length > 0) {myFilters = myFilters.and(me._getTagFilter(tags));}
+        myFilters = myFilters.and(me._getParentFilter());
+        
+        return myFilters;    
+    },
+    
+    
+    _getStateFilter: function(states){
+
+      var output = undefined;
       var currFilter = undefined;
-      var tagFilter = undefined;
       
       // state filter
       states.forEach(function(state){
@@ -167,14 +177,20 @@ Ext.define('CustomApp', {
           operation: '=',
           value: state
         });
-        if (myFilters) {
-            myFilters = myFilters.or(currFilter);
+        if (output) {
+            output = output.or(currFilter);
         }else {
-            myFilters = currFilter;
+            output = currFilter;
         }
       });
+      return output;
+    },
+    
+    
+    
+    _getIterFilter: function(iter){
       
-      // iteration filter
+       // iteration filter
       var iterDate  = me.down('#iteration-combobox').getRecord().data.StartDate.toISOString();
       
       var iterFilter1 = Ext.create('Rally.data.wsapi.Filter', {
@@ -192,38 +208,13 @@ Ext.define('CustomApp', {
           })
       );
       
-    myFilters = myFilters.and(iterFilter);
-    
-    // tagfilter
-    
-    console.log('tags is',tags);
-    if (tags.length > 0){
-      
-      _.each(tags, function(tag) {
-        
-            if (!tagFilter){
-              
-              tagFilter = Ext.create('Rally.data.wsapi.Filter', {
-              property: 'Tags',
-              operator: '=',
-              value: tag.data._ref});
-              
-            } else {
-              
-              tagFilter = tagFilter.or(Ext.create('Rally.data.wsapi.Filter', {
-              property: 'Tags',
-              operator: '=',
-              value: tag.data._ref}));
-            }
-        });
-      myFilters = myFilters.and(tagFilter);
-      
-    }  
-    
-    console.log('did tags filter');
+      return iterFilter;  
+    },
     
     
-      // epic filter
+    
+    
+    _getEpicFilter: function(epic){
       
       //var epic  = me.down('#epic-combobox').getValue();
       console.log('epic Value is ', epic);
@@ -239,22 +230,59 @@ Ext.define('CustomApp', {
           operator: '=',
           value: epic
         }));
-        myFilters = myFilters.and(epicFilter);        
+        return epicFilter;        
+      }     
+    },
+    
+    
+    
+    _getTagFilter: function(tags){
+      
+      
+      var tagFilter = undefined;
+         // tagfilter    
+      console.log('tags is',tags);
+      if (tags.length > 0){
+        
+        _.each(tags, function(tag) {
+          
+              if (!tagFilter){
+                
+                tagFilter = Ext.create('Rally.data.wsapi.Filter', {
+                property: 'Tags',
+                operator: '=',
+                value: tag.data._ref});
+                
+              } else {
+                
+                tagFilter = tagFilter.or(Ext.create('Rally.data.wsapi.Filter', {
+                property: 'Tags',
+                operator: '=',
+                value: tag.data._ref}));
+              }
+          });       
+      } else {
+          // throw exception?
       }
+      return tagFilter;
+    },
+    
+    _getParentFilter(){
       
       // exclude parent stories     
-      myFilters = myFilters.and(Ext.create('Rally.data.wsapi.Filter', {
+      return Ext.create('Rally.data.wsapi.Filter', {
         property: 'DirectChildrenCount',
         operator: '=',
         value: 0
-      }));
-      return myFilters     
+      }); 
     },
     
-    _hideEmptyColumns(cols){
+    _hideEmptyColumns(){
       
       console.log('entering hide empty');
       var me = this;
+      
+      var cols = me.down('#progressboard').getColumns();
       
       var showEmpty  = me.down('#hidecheckbox').getValue();
       var firstIter = me.down('#iteration-combobox').getRecord().get('Name');
@@ -282,11 +310,49 @@ Ext.define('CustomApp', {
       });
       console.log('leaving hide empty');
     },
+   
+    _doCollapse(){
+      
+      var rows = me.down('#progressboard').getRows();
+      
+      var collapseAll = false;
+      var expandAll = true;  
+        
+      if (collapseAll){
+            me._collapseAll(rows);
+      } else if (expandAll){
+            me._expandAll(rows);
+      }      
+    },
     
+    _collapseAll(rows){
+      var me = this;
+      console.log('in collapse');
+      _.each(rows, function(row) {
+        console.log('collapsing', row);
+        row.collapse();
+        //console.log('collapsed', row);
+      });
+    },
+      
+      
+    _expandAll(rows){
+      var me = this;
+      console.log('in expand');
+      _.each(rows, function(row) {
+        console.log('expanding', row);
+        row.expand();
+        //console.log('expanded', row);
+      });
+    },
+      
+      
     _onBoardLoaded: function(board, config){
 
-      var me = this;
-      me._hideEmptyColumns(board.getColumns());    
+      var me = this;   
+      me._hideEmptyColumns();
+      me._doCollapse();       
+    
     },
     
     _loadData: function(){
@@ -308,8 +374,10 @@ Ext.define('CustomApp', {
           console.log('setting parent', epic);
           rowConf = 'Parent';
           fieldList = ['Name','ScheduleState','PlanEstimate'];
+          console.log('shouldnt see parent in the card');
         }
 
+        console.log('fieldlist is ',fieldList);
        
         if (me.StoryMapBoard) {
 
@@ -319,7 +387,10 @@ Ext.define('CustomApp', {
                   },
                   rowConfig: {
                     field: rowConf
-                  }
+                  },
+                  cardConfig: {
+                    fields: fieldList
+                  }                
            });
           
         } else {
@@ -328,7 +399,7 @@ Ext.define('CustomApp', {
                 //xtype: 'rallycardboard',
                 types: ['User Story'],
                 attribute: 'Iteration',
-                //context: this.getContext(),
+                itemId: 'progressboard',
                 
                 rowConfig: {
                     field: rowConf
@@ -403,7 +474,7 @@ Ext.define('CustomApp', {
 
 // add project selector - done (not needed when we use getcontext)
 
-// add tag picker
+// add tag picker - done
 
 
 // put date in the header as well
@@ -413,7 +484,7 @@ Ext.define('CustomApp', {
 // BUG? why do completed stories not count in cardcount sometimes?
 
 // indicate size and progress vs tasks
-// navigate from current project only, up to epics, then select anything from other squads as well. Mark somehow
+// navigate from current project only, up to epics, then select anything from other squads as well. Mark somehow. don't doo, will work with top level and epic select
  
 
 });
