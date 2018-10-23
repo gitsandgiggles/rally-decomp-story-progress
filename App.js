@@ -47,7 +47,12 @@ Ext.define('CustomApp', {
             ready: me._loadSchedules,      // initialization flow: next, load schedules
             select: me._loadData,           // user interactivity: when they choose a value, (re)load the data
             scope: me
-         }
+           },
+           storeConfig: {
+            context: {
+                    projectScopeDown: true
+                }
+            }
         });
 
         me.down('#pulldown-container').add(iterComboBox); 
@@ -148,7 +153,7 @@ Ext.define('CustomApp', {
           boxLabel: 'Show empty iterations',
           itemId: 'hidecheckbox',
           value: true,
-          width: 300,
+          width: 200,
           padding: '0 0 0 30',
            
            listeners: {
@@ -444,7 +449,7 @@ Ext.define('CustomApp', {
                   },
                   cardConfig: {
                     fields: fieldList
-                  }                
+                  }
            });
           
         } else {
@@ -461,6 +466,15 @@ Ext.define('CustomApp', {
                 cardConfig: {
                     fields: fieldList
                 },
+                
+                /*columnHeaderConfig: {
+                    headerTpl: "{name}<br/>{start_date} - {end_date}",
+                    headerData: {
+                                  name: record.get('Name'),
+                                  start_date: start_date,
+                                  end_date: end_date
+                                }
+                 },*/
                 
                 listeners: {
                               load: me._onBoardLoaded,
@@ -533,12 +547,12 @@ Ext.define('CustomApp', {
 
 // put date in the header as well
 
-// get the program view working - load all iterations of child projects
+// get the program view working - load all iterations of child projects - done
 
-// BUG? why do completed stories not count in cardcount sometimes?
+// BUG? why do completed stories not count in cardcount sometimes? - doneish - need to  scroll to end to load
 
 // indicate size and progress vs tasks
-// navigate from current project only, up to epics, then select anything from other squads as well. Mark somehow. don't doo, will work with top level and epic select
+// navigate from current project only, up to epics, then select anything from other squads as well. Mark somehow. don't do, use top level and epic select
  
 
 });
