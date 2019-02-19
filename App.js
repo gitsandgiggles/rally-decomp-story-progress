@@ -203,6 +203,7 @@ Ext.define('CustomApp', {
         if (epic != '') { myFilters = myFilters.and(me._getEpicFilter(epic)); }
         if (tags.length > 0) { myFilters = myFilters.and(me._getTagFilter(tags)); }
         myFilters = myFilters.and(me._getParentFilter());
+        myFilters = myFilters.and(me._getKanBanFilter());
         
         return myFilters;    
     },
@@ -336,6 +337,18 @@ Ext.define('CustomApp', {
       }); 
     },
     
+    
+    _getKanBanFilter(){
+      
+      // exclude KanBan tag stories     
+      return Ext.create('Rally.data.wsapi.Filter', {
+        property: 'Tags.Name',
+        operator: '!=',
+        value: 'KanBan'
+      }); 
+    },
+    
+    
     _hideEmptyColumns(){
       
       console.log('entering hide empty');
@@ -408,7 +421,7 @@ Ext.define('CustomApp', {
       var me = this;   
       me._hideEmptyColumns();
       me._doCollapse('expand');       
-    
+      //me.render();
     },
     
     _loadData: function(){
@@ -470,9 +483,9 @@ Ext.define('CustomApp', {
                 /*columnHeaderConfig: {
                     headerTpl: "{name}<br/>{start_date} - {end_date}",
                     headerData: {
-                                  name: record.get('Name'),
-                                  start_date: start_date,
-                                  end_date: end_date
+                                  name: this.record.get('Name'),
+                                  start_date: this.record.get('start_date'),
+                                  end_date: this.record.get('end_date')
                                 }
                  },*/
                 
